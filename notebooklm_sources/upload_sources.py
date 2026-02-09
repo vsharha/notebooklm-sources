@@ -12,22 +12,41 @@ def upload_files(files: list[Path | str], page):
     file_chooser = fc_info.value
     file_chooser.set_files(files)
 
+def list_uploaded(page) -> list[str]:
+    return [
+        source.locator(".source-title-column").text_content()
+        for source in page.locator(".single-source-container").all()
+    ]
+
 def upload_sources(notebook_url: str, files: list[Path | str]):
+    if not files:
+        return
+
     with sync_playwright() as playwright:
         context = playwright.chromium.launch_persistent_context(
             user_data_dir="profile",
-            headless=False
+            headless=False,
         )
-
-        if context.pages:
-            page = context.pages[0]
-        else:
-            page = context.new_page()
+        page = context.pages[0] if context.pages else context.new_page()
 
         page.goto(notebook_url)
         if page.url != notebook_url:
             print("Waiting for authentication...")
-            page.wait_for_url(notebook_url, timeout = 2 * 60 * 1000)
+            page.wait_for_url(notebook_url, timeout=2 * 60 * 1000)
 
-        for file in files:
-            upload_file(file, page)
+        already_uploaded = set(list_uploaded(page))
+        new_files = [
+            f for f in files
+            if Path(f).stem not in already_uploaded
+        ]
+
+        skipped = len(files) - len(new_files)
+        if skipped:
+            print(f"Skipping {skipped} already uploaded file(s)")
+
+        if not new_files:
+            context.close()
+            return
+
+        upload_files(new_files, page)
+        context.close()
