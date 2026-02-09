@@ -19,6 +19,6 @@ mapping: dict[str, CourseConfig] = {
             "week": "week-*",
             "lecture": "lecture-*",
         },
-        "notebook_url": "https://notebooklm.google.com/notebook/4021c72f-68df-41da-bd67-193538009614",
+        "notebook_url": "https://notebooklm.google.com/notebook/5e8b1c41-babf-456c-a47c-b5f3b85528ef",
     }
 }

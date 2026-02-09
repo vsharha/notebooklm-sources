@@ -1,12 +1,10 @@
 from pathlib import Path
 from patchright.sync_api import sync_playwright
 
-def upload_files(files: list[Path | str], page):
+def upload_files(files: list[Path | str], page, notebook_url: str):
     files: list[Path] = [Path(file) for file in files]
 
-    page.wait_for_selector(".add-source-button")
-
-    page.locator(".add-source-button").click()
+    page.goto(f"{notebook_url}?addSource=true")
 
     page.wait_for_selector(".drop-zone")
 
@@ -16,13 +14,32 @@ def upload_files(files: list[Path | str], page):
     file_chooser = fc_info.value
     file_chooser.set_files(files)
 
-def list_uploaded(page) -> list[str]:
-    page.wait_for_load_state("domcontentloaded")
+    page.wait_for_selector(
+        ".single-source-container .select-checkbox-container .loading-spinner",
+    )
+    page.wait_for_selector(
+        ".single-source-container .select-checkbox-container .loading-spinner",
+        state="hidden",
+        timeout=0,
+    )
 
-    return [
-        source.locator(".source-title-column").text_content()
-        for source in page.locator(".single-source-container").all()
-    ]
+def wait_for_stable_count(page, selector, interval=1000):
+    locator = page.locator(selector)
+    prev_count = None
+    while True:
+        page.wait_for_timeout(interval)
+        count = locator.count()
+        if count == prev_count:
+            return
+        prev_count = count
+
+def list_uploaded(page) -> set[str]:
+    wait_for_stable_count(page, ".single-source-container .source-title-column span")
+
+    return set([
+        label.text_content()
+        for label in page.locator(".single-source-container .source-title-column span").all()
+    ])
 
 def upload_sources(notebook_url: str, files: list[Path | str]):
     if not files:
@@ -41,10 +58,11 @@ def upload_sources(notebook_url: str, files: list[Path | str]):
             print("Waiting for authentication...")
             page.wait_for_url(f"{notebook_url}**", timeout=2 * 60 * 1000)
 
-        already_uploaded = set(list_uploaded(page))
+        already_uploaded = list_uploaded(page)
+
         new_files = [
             f for f in files
-            if Path(f).stem not in already_uploaded
+            if Path(f).name not in already_uploaded
         ]
 
         skipped = len(files) - len(new_files)
@@ -55,5 +73,8 @@ def upload_sources(notebook_url: str, files: list[Path | str]):
             context.close()
             return
 
-        upload_files(new_files, page)
+        upload_files(new_files, page, notebook_url)
+
+        print(f"Uploaded {len(new_files)} file(s)")
+
         context.close()

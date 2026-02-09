@@ -14,6 +14,7 @@ def download_pdfs_from_pages(pages: set[str], subdir: str = "", image: bool = Tr
     existing = {p.name for p in out.iterdir() if p.suffix.lower() == ".pdf"}
 
     seen = set()
+    skipped = 0
     i = 1
 
     for page in sorted(pages):
@@ -30,12 +31,15 @@ def download_pdfs_from_pages(pages: set[str], subdir: str = "", image: bool = Tr
             name = f"{i}_{pdf_url.split('/')[-1]}"
 
             if name in existing:
-                print(f"Skipping (already downloaded) {name}")
+                skipped += 1
             else:
                 print(f"Downloading {pdf_url}")
                 (out / name).write_bytes(requests.get(pdf_url).content)
 
             i += 1
+
+    if skipped:
+        print(f"Skipped {skipped} already downloaded file(s)")
 
     if image:
         convert_image_pdfs(out, out / "image")
@@ -46,13 +50,14 @@ def convert_image_pdfs(input_dir: str | Path, output_dir: str | Path):
     output_dir.mkdir(exist_ok=True)
 
     already_converted = {p.name for p in output_dir.iterdir()} if output_dir.exists() else set()
+    skipped = 0
 
     for pdf_path in Path(input_dir).iterdir():
         if pdf_path.suffix.lower() != ".pdf":
             continue
 
         if pdf_path.name in already_converted:
-            print(f"Skipping (already converted) {pdf_path.name}")
+            skipped += 1
             continue
 
         print(f"Converting {pdf_path}")
@@ -83,3 +88,6 @@ def convert_image_pdfs(input_dir: str | Path, output_dir: str | Path):
             gc.collect()
             if "pages" in locals():
                 del pages
+
+    if skipped:
+        print(f"Skipped {skipped} already converted file(s)")
