@@ -7,21 +7,12 @@ from notebooklm_sources.upload_sources import upload_sources
 
 
 def resolve_pages(sources: SourcesConfig) -> set[str]:
-    url = sources["url"]
-    week = sources.get("week")
-    lecture = sources.get("lecture")
-
-    if not week:
-        return {url}
-
-    weeks = collect_links(url, week)
-
-    if not lecture:
-        return weeks
-
-    pages = set()
-    for w in weeks:
-        pages |= collect_links(w, lecture)
+    pages = {sources["url"]}
+    for pattern in sources.get("patterns", []):
+        next_pages = set()
+        for page in pages:
+            next_pages |= collect_links(page, pattern)
+        pages = next_pages
     return pages
 
 
