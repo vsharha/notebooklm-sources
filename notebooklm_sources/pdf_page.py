@@ -19,7 +19,7 @@ def same_domain(base: str, url: str) -> bool:
 def collect_links(page_url: str, path_pattern: str) -> set[str]:
     rx = glob_to_regex(path_pattern)
 
-    html = requests.get(page_url).text
+    html = requests.get(page_url, timeout=15).text
     soup = BeautifulSoup(html, "html.parser")
 
     matches = set()
@@ -48,7 +48,7 @@ def collect_indexed_pages(base_url: str, pattern: str) -> set[str]:
     pages = set()
     for i in itertools.count(1):
         url = urljoin(base_url.rstrip("/") + "/", pattern.replace("{n}", str(i)))
-        resp = requests.get(url)
+        resp = requests.get(url, timeout=15)
         if resp.status_code != 200:
             break
         pages.add(url)

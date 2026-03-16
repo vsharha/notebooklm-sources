@@ -18,7 +18,11 @@ def download_pdfs_from_pages(pages: set[str], subdir: str = "", image: bool = Tr
     i = 1
 
     for page in sorted(pages):
-        html = requests.get(page).text
+        try:
+            html = requests.get(page, timeout=15).text
+        except requests.exceptions.Timeout:
+            print(f"Timed out fetching page: {page}")
+            continue
         soup = BeautifulSoup(html, "html.parser")
 
         for a in soup.select("a[href$='.pdf']"):
@@ -34,7 +38,17 @@ def download_pdfs_from_pages(pages: set[str], subdir: str = "", image: bool = Tr
                 skipped += 1
             else:
                 print(f"Downloading {pdf_url}")
-                (out / name).write_bytes(requests.get(pdf_url).content)
+                try:
+                    data = requests.get(pdf_url, timeout=15).content
+                except requests.exceptions.Timeout:
+                    print(f"  Timed out: {pdf_url}")
+                    i -= 1
+                    continue
+                if not data.startswith(b"%PDF"):
+                    print(f"  Skipping (not a PDF): {pdf_url}")
+                    i -= 1
+                    continue
+                (out / name).write_bytes(data)
 
             i += 1
 

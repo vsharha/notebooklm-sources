@@ -12,13 +12,13 @@ class CourseConfig(TypedDict):
 
 
 mapping: dict[str, CourseConfig] = {
-    "inf2d": {
-        "sources": {
-            "url": "https://opencourse.inf.ed.ac.uk/inf2d/course-materials",
-            "patterns": ["week-*", "lecture-*"],
-        },
-        "notebook_url": "https://notebooklm.google.com/notebook/5e8b1c41-babf-456c-a47c-b5f3b85528ef",
-    },
+    # "inf2d": {
+    #     "sources": {
+    #         "url": "https://opencourse.inf.ed.ac.uk/inf2d/course-materials",
+    #         "patterns": ["week-*", "lecture-*"],
+    #     },
+    #     "notebook_url": "https://notebooklm.google.com/notebook/5e8b1c41-babf-456c-a47c-b5f3b85528ef",
+    # },
     "inf2-iads": {
         "sources": {
             "url": "https://opencourse.inf.ed.ac.uk/inf2-iads/course-materials",
