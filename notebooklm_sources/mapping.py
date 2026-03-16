@@ -24,7 +24,7 @@ mapping: dict[str, CourseConfig] = {
             "url": "https://opencourse.inf.ed.ac.uk/inf2-iads/course-materials",
             "patterns": ["semester-{n}", "schedule"],
         },
-        "notebook_url": "https://notebooklm.google.com/notebook/ea1aa2a7-401e-4695-a5d1-4011f4d4bda8?authuser=1",
+        "notebook_url": "https://notebooklm.google.com/notebook/ea1aa2a7-401e-4695-a5d1-4011f4d4bda8",
     },
     # "inf2-sepp": {
     #     "sources": {
