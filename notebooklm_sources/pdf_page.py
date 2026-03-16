@@ -1,3 +1,5 @@
+import itertools
+
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
@@ -40,3 +42,14 @@ def collect_links(page_url: str, path_pattern: str) -> set[str]:
                 matches.add(href)
 
     return matches
+
+
+def collect_indexed_pages(base_url: str, pattern: str) -> set[str]:
+    pages = set()
+    for i in itertools.count(1):
+        url = urljoin(base_url.rstrip("/") + "/", pattern.replace("{n}", str(i)))
+        resp = requests.get(url)
+        if resp.status_code != 200:
+            break
+        pages.add(url)
+    return pages

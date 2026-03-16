@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from notebooklm_sources.mapping import mapping, SourcesConfig
-from notebooklm_sources.pdf_page import collect_links
+from notebooklm_sources.pdf_page import collect_links, collect_indexed_pages
 from notebooklm_sources.pdf import download_pdfs_from_pages
 from notebooklm_sources.upload_sources import upload_sources
 
@@ -11,7 +11,10 @@ def resolve_pages(sources: SourcesConfig) -> set[str]:
     for pattern in sources.get("patterns", []):
         next_pages = set()
         for page in pages:
-            next_pages |= collect_links(page, pattern)
+            if "{n}" in pattern:
+                next_pages |= collect_indexed_pages(page, pattern)
+            else:
+                next_pages |= collect_links(page, pattern)
         pages = next_pages
     return pages
 
