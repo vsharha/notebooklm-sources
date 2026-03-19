@@ -12,3 +12,5 @@ wheels/
 pdfs
 .idea
 profile/
+
+.DS_Store
