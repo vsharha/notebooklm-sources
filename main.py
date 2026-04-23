@@ -28,6 +28,10 @@ def process_course(course_name: str, config):
     print(f"Found {len(pages)} page(s)")
 
     download_pdfs_from_pages(pages, subdir=course_name)
+    notebook_url = config.get("notebook_url")
+    if not notebook_url:
+        print("No notebook URL configured; nothing was uploaded.")
+        return
 
     image_dir = Path("pdfs") / course_name / "image"
     if not image_dir.exists():
@@ -40,7 +44,7 @@ def process_course(course_name: str, config):
         return
 
     print(f"Found {len(image_pdfs)} image PDF(s) to upload")
-    upload_sources(config["notebook_url"], image_pdfs)
+    upload_sources(notebook_url, image_pdfs)
 
 
 def main():

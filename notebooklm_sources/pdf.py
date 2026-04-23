@@ -15,8 +15,6 @@ def download_pdfs_from_pages(pages: set[str], subdir: str = "", image: bool = Tr
 
     seen = set()
     skipped = 0
-    i = 1
-
     for page in sorted(pages):
         try:
             html = requests.get(page, timeout=15).text
@@ -32,7 +30,7 @@ def download_pdfs_from_pages(pages: set[str], subdir: str = "", image: bool = Tr
                 continue
 
             seen.add(pdf_url)
-            name = f"{i}_{pdf_url.split('/')[-1]}"
+            name = pdf_url.split("/")[-1]
 
             if name in existing:
                 skipped += 1
@@ -42,15 +40,12 @@ def download_pdfs_from_pages(pages: set[str], subdir: str = "", image: bool = Tr
                     data = requests.get(pdf_url, timeout=15).content
                 except requests.exceptions.Timeout:
                     print(f"  Timed out: {pdf_url}")
-                    i -= 1
                     continue
                 if not data.startswith(b"%PDF"):
                     print(f"  Skipping (not a PDF): {pdf_url}")
-                    i -= 1
                     continue
                 (out / name).write_bytes(data)
-
-            i += 1
+                existing.add(name)
 
     if skipped:
         print(f"Skipped {skipped} already downloaded file(s)")
