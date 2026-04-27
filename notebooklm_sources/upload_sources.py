@@ -71,14 +71,6 @@ def upload_sources(
         uploaded_source_ids_by_title = list_uploaded(client, notebook_id)
 
         if replace:
-            source_ids_to_delete = [
-                source_id
-                for file in files
-                for source_id in uploaded_source_ids_by_title.get(file.name, [])
-            ]
-            if source_ids_to_delete:
-                print(f"Deleting {len(source_ids_to_delete)} existing source(s)")
-                client.delete_sources(source_ids_to_delete)
             files_to_upload = files
         else:
             files_to_upload = [
@@ -92,12 +84,16 @@ def upload_sources(
 
         for file in files_to_upload:
             print(f"Uploading {file.name}")
+            old_source_ids = uploaded_source_ids_by_title.get(file.name, [])
             client.add_file(
                 notebook_id,
                 file,
-                wait=wait,
+                wait=wait or replace,
                 wait_timeout=wait_timeout,
             )
+            if replace and old_source_ids:
+                print(f"Deleting {len(old_source_ids)} replaced source(s) for {file.name}")
+                client.delete_sources(old_source_ids)
 
     if files_to_upload:
         print(f"Uploaded {len(files_to_upload)} file(s)")
