@@ -6,7 +6,8 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "beautifulsoup4>=4.14.3",
-    "patchright>=1.58.0",
+    "notebooklm-mcp-cli>=0.5.31",
     "pdf2image>=1.17.0",
+    "pydantic>=2.13.3",
     "requests>=2.32.5",
 ]

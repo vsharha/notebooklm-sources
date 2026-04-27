@@ -1,80 +1,86 @@
 from pathlib import Path
-from patchright.sync_api import sync_playwright
+from urllib.parse import urlparse
 
-def upload_files(files: list[Path | str], page, notebook_url: str):
-    files: list[Path] = [Path(file) for file in files]
+from notebooklm_tools.core.auth import get_auth_manager
+from notebooklm_tools.core.client import NotebookLMClient
 
-    page.goto(f"{notebook_url}?addSource=true")
 
-    page.wait_for_selector(".drop-zone")
+def notebook_id_from_ref(notebook_ref: str) -> str:
+    parsed = urlparse(notebook_ref)
+    if not parsed.scheme:
+        return notebook_ref
 
-    with page.expect_file_chooser() as fc_info:
-        page.locator(".drop-zone").get_by_text("Upload files").click()
+    path_parts = [part for part in parsed.path.split("/") if part]
+    try:
+        notebook_index = path_parts.index("notebook")
+    except ValueError as exc:
+        raise ValueError(f"Notebook URL does not contain a notebook id: {notebook_ref}") from exc
 
-    file_chooser = fc_info.value
-    file_chooser.set_files(files)
+    try:
+        return path_parts[notebook_index + 1]
+    except IndexError as exc:
+        raise ValueError(f"Notebook URL does not contain a notebook id: {notebook_ref}") from exc
 
-    page.wait_for_selector(
-        ".single-source-container .select-checkbox-container .loading-spinner",
+
+def get_client(profile: str | None = None) -> NotebookLMClient:
+    manager = get_auth_manager(profile)
+    if not manager.profile_exists():
+        profile_name = manager.profile_name
+        raise RuntimeError(
+            f"NotebookLM auth profile '{profile_name}' was not found. "
+            "Run `uv run nlm login` before uploading sources."
+        )
+
+    auth_profile = manager.load_profile()
+    return NotebookLMClient(
+        cookies=auth_profile.cookies,
+        csrf_token=auth_profile.csrf_token or "",
+        session_id=auth_profile.session_id or "",
+        build_label=auth_profile.build_label or "",
     )
-    page.wait_for_selector(
-        ".single-source-container .select-checkbox-container .loading-spinner",
-        state="hidden",
-        timeout=0,
-    )
 
-def wait_for_stable_count(page, selector, interval=1000):
-    locator = page.locator(selector)
-    prev_count = None
-    while True:
-        page.wait_for_timeout(interval)
-        count = locator.count()
-        if count == prev_count:
-            return
-        prev_count = count
 
-def list_uploaded(page) -> set[str]:
-    wait_for_stable_count(page, ".single-source-container .source-title-column span")
+def list_uploaded(client: NotebookLMClient, notebook_id: str) -> set[str]:
+    sources = client.get_notebook_sources_with_types(notebook_id)
 
-    return set([
-        label.text_content()
-        for label in page.locator(".single-source-container .source-title-column span").all()
-    ])
+    return {
+        source["title"]
+        for source in sources
+        if isinstance(source.get("title"), str)
+    }
 
-def upload_sources(notebook_url: str, files: list[Path | str]):
+
+def upload_sources(
+    notebook_ref: str,
+    files: list[Path | str],
+    *,
+    profile: str | None = None,
+    wait: bool = True,
+    wait_timeout: float = 600.0,
+) -> None:
     if not files:
         return
 
-    with sync_playwright() as playwright:
-        context = playwright.chromium.launch_persistent_context(
-            user_data_dir="profile",
-            headless=False,
-            args=["--disable-blink-features=AutomationControlled"],
-        )
-        page = context.pages[0] if context.pages else context.new_page()
+    notebook_id = notebook_id_from_ref(notebook_ref)
+    files = [Path(file) for file in files]
 
-        page.goto(notebook_url)
-        if not page.url.startswith(notebook_url):
-            print("Waiting for authentication...")
-            page.wait_for_url(f"{notebook_url}**", timeout=2 * 60 * 1000)
+    with get_client(profile) as client:
+        already_uploaded = list_uploaded(client, notebook_id)
 
-        already_uploaded = list_uploaded(page)
-
-        new_files = [
-            f for f in files
-            if Path(f).name not in already_uploaded
-        ]
+        new_files = [file for file in files if file.name not in already_uploaded]
 
         skipped = len(files) - len(new_files)
         if skipped:
             print(f"Skipping {skipped} already uploaded file(s)")
 
-        if not new_files:
-            context.close()
-            return
+        for file in new_files:
+            print(f"Uploading {file.name}")
+            client.add_file(
+                notebook_id,
+                file,
+                wait=wait,
+                wait_timeout=wait_timeout,
+            )
 
-        upload_files(new_files, page, notebook_url)
-
+    if new_files:
         print(f"Uploaded {len(new_files)} file(s)")
-
-        context.close()

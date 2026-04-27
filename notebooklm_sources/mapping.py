@@ -1,40 +1,34 @@
-from typing import NotRequired, Required, TypedDict
+import tomllib
+from pathlib import Path
+
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
 
-class SourcesConfig(TypedDict, total=False):
-    url: Required[str]
-    patterns: list[str]
+NOTEBOOK_ID_PATTERN = r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "courses.toml"
 
 
-class CourseConfig(TypedDict):
+class SourcesConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    url: HttpUrl
+    patterns: list[str] = Field(default_factory=list)
+
+
+class CourseConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     sources: SourcesConfig
-    notebook_url: NotRequired[str]
+    notebook_id: str | None = Field(default=None, pattern=NOTEBOOK_ID_PATTERN)
 
 
-mapping: dict[str, CourseConfig] = {
-    "inf2d": {
-        "sources": {
-            "url": "https://opencourse.inf.ed.ac.uk/inf2d/course-materials",
-            "patterns": ["week-*", "lecture-*"],
-        },
-        "notebook_url": "https://notebooklm.google.com/notebook/7733edc5-7ed2-4e59-b0be-a53dce198a26",
-    },
-    "inf2-iads": {
-        "sources": {
-            "url": "https://opencourse.inf.ed.ac.uk/inf2-iads/course-materials",
-            "patterns": ["semester-{n}", "schedule"],
-        },
-        "notebook_url": "https://notebooklm.google.com/notebook/0fc9e3d6-de9e-47dc-980c-055f35b70ac2",
-    },
-    "inf2-fds": {
-        "sources": {
-            "url": "https://opencourse.inf.ed.ac.uk/inf2-fds/resource-list",
-        },
-        "notebook_url": "https://notebooklm.google.com/notebook/fcf1a72f-3ccf-457d-9996-7f819791c413"
-    },
-    "inf2-sepp": {
-        "sources": {
-            "url": "https://opencourse.inf.ed.ac.uk/inf2-sepp/schedule"
-        }   
-    },
-}
+class CoursesConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    courses: dict[str, CourseConfig]
+
+
+def load_mapping(path: Path | str = DEFAULT_CONFIG_PATH) -> dict[str, CourseConfig]:
+    config_path = Path(path)
+    data = tomllib.loads(config_path.read_text())
+    return CoursesConfig.model_validate(data).courses

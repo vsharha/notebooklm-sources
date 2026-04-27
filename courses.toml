@@ -1,0 +1,22 @@
+[courses.inf2d]
+notebook_id = "7733edc5-7ed2-4e59-b0be-a53dce198a26"
+
+[courses.inf2d.sources]
+url = "https://opencourse.inf.ed.ac.uk/inf2d/course-materials"
+patterns = ["week-*", "lecture-*"]
+
+[courses.inf2-iads]
+notebook_id = "0fc9e3d6-de9e-47dc-980c-055f35b70ac2"
+
+[courses.inf2-iads.sources]
+url = "https://opencourse.inf.ed.ac.uk/inf2-iads/course-materials"
+patterns = ["semester-{n}", "schedule"]
+
+[courses.inf2-fds]
+notebook_id = "fcf1a72f-3ccf-457d-9996-7f819791c413"
+
+[courses.inf2-fds.sources]
+url = "https://opencourse.inf.ed.ac.uk/inf2-fds/resource-list"
+
+[courses.inf2-sepp.sources]
+url = "https://opencourse.inf.ed.ac.uk/inf2-sepp/schedule"
