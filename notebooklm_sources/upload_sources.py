@@ -40,14 +40,16 @@ def get_client(profile: str | None = None) -> NotebookLMClient:
     )
 
 
-def list_uploaded(client: NotebookLMClient, notebook_id: str) -> set[str]:
-    sources = client.get_notebook_sources_with_types(notebook_id)
+def list_uploaded(client: NotebookLMClient, notebook_id: str) -> dict[str, list[str]]:
+    sources_by_title: dict[str, list[str]] = {}
 
-    return {
-        source["title"]
-        for source in sources
-        if isinstance(source.get("title"), str)
-    }
+    for source in client.get_notebook_sources_with_types(notebook_id):
+        title = source.get("title")
+        source_id = source.get("id")
+        if isinstance(title, str) and isinstance(source_id, str):
+            sources_by_title.setdefault(title, []).append(source_id)
+
+    return sources_by_title
 
 
 def upload_sources(
@@ -57,6 +59,7 @@ def upload_sources(
     profile: str | None = None,
     wait: bool = True,
     wait_timeout: float = 600.0,
+    replace: bool = False,
 ) -> None:
     if not files:
         return
@@ -65,15 +68,29 @@ def upload_sources(
     files = [Path(file) for file in files]
 
     with get_client(profile) as client:
-        already_uploaded = list_uploaded(client, notebook_id)
+        uploaded_source_ids_by_title = list_uploaded(client, notebook_id)
 
-        new_files = [file for file in files if file.name not in already_uploaded]
+        if replace:
+            source_ids_to_delete = [
+                source_id
+                for file in files
+                for source_id in uploaded_source_ids_by_title.get(file.name, [])
+            ]
+            if source_ids_to_delete:
+                print(f"Deleting {len(source_ids_to_delete)} existing source(s)")
+                client.delete_sources(source_ids_to_delete)
+            files_to_upload = files
+        else:
+            files_to_upload = [
+                file for file in files
+                if file.name not in uploaded_source_ids_by_title
+            ]
 
-        skipped = len(files) - len(new_files)
-        if skipped:
+        skipped = len(files) - len(files_to_upload)
+        if skipped and not replace:
             print(f"Skipping {skipped} already uploaded file(s)")
 
-        for file in new_files:
+        for file in files_to_upload:
             print(f"Uploading {file.name}")
             client.add_file(
                 notebook_id,
@@ -82,5 +99,5 @@ def upload_sources(
                 wait_timeout=wait_timeout,
             )
 
-    if new_files:
-        print(f"Uploaded {len(new_files)} file(s)")
+    if files_to_upload:
+        print(f"Uploaded {len(files_to_upload)} file(s)")
