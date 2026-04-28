@@ -16,6 +16,7 @@ def resolve_pages(sources: SourcesConfig) -> set[str]:
             else:
                 next_pages |= collect_links(page, pattern)
         pages = next_pages
+    pages |= {str(page) for page in sources.extra_pages}
     return pages
 
 
