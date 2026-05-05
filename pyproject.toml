@@ -9,5 +9,6 @@ dependencies = [
     "notebooklm-mcp-cli>=0.5.31",
     "pdf2image>=1.17.0",
     "pydantic>=2.13.3",
+    "pyyaml>=6.0.3",
     "requests>=2.32.5",
 ]

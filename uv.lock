@@ -302,6 +302,7 @@ dependencies = [
     { name = "notebooklm-mcp-cli" },
     { name = "pdf2image" },
     { name = "pydantic" },
+    { name = "pyyaml" },
     { name = "requests" },
 ]
 
@@ -311,6 +312,7 @@ requires-dist = [
     { name = "notebooklm-mcp-cli", specifier = ">=0.5.31" },
     { name = "pdf2image", specifier = ">=1.17.0" },
     { name = "pydantic", specifier = ">=2.13.3" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "requests", specifier = ">=2.32.5" },
 ]
 

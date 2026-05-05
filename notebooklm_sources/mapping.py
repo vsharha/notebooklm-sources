@@ -1,11 +1,11 @@
-import tomllib
 from pathlib import Path
 
+import yaml
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
 
 NOTEBOOK_ID_PATTERN = r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
-DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "courses.toml"
+DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "courses.yaml"
 
 
 class SourcesConfig(BaseModel):
@@ -31,5 +31,5 @@ class CoursesConfig(BaseModel):
 
 def load_mapping(path: Path | str = DEFAULT_CONFIG_PATH) -> dict[str, CourseConfig]:
     config_path = Path(path)
-    data = tomllib.loads(config_path.read_text())
+    data = yaml.safe_load(config_path.read_text())
     return CoursesConfig.model_validate(data).courses
