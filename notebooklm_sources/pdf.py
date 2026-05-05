@@ -17,7 +17,7 @@ def download_pdfs_from_pages(pages: set[str], subdir: str = "", image: bool = Tr
     skipped = 0
     for page in sorted(pages):
         try:
-            html = requests.get(page, timeout=15).text
+            html = requests.get(page, timeout=15, headers={"User-Agent": "Mozilla/5.0"}).text
         except requests.exceptions.Timeout:
             print(f"Timed out fetching page: {page}")
             continue
@@ -37,7 +37,7 @@ def download_pdfs_from_pages(pages: set[str], subdir: str = "", image: bool = Tr
             else:
                 print(f"Downloading {pdf_url}")
                 try:
-                    data = requests.get(pdf_url, timeout=15).content
+                    data = requests.get(pdf_url, timeout=15, headers={"User-Agent": "Mozilla/5.0"}).content
                 except requests.exceptions.Timeout:
                     print(f"  Timed out: {pdf_url}")
                     continue
