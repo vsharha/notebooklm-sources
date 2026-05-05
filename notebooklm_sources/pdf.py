@@ -35,15 +35,19 @@ def download_pdfs_from_pages(pages: set[str], subdir: str = "", image: bool = Tr
             if name in existing:
                 skipped += 1
             else:
-                print(f"Downloading {pdf_url}")
                 try:
-                    data = requests.get(pdf_url, timeout=15, headers={"User-Agent": "Mozilla/5.0"}).content
+                    resp = requests.get(pdf_url, timeout=15, headers={"User-Agent": "Mozilla/5.0"})
                 except requests.exceptions.Timeout:
                     print(f"  Timed out: {pdf_url}")
                     continue
-                if not data.startswith(b"%PDF"):
+                if resp.status_code != 200:
+                    print(f"  Skipping (HTTP {resp.status_code}): {pdf_url}")
+                    continue
+                if not resp.content.startswith(b"%PDF"):
                     print(f"  Skipping (not a PDF): {pdf_url}")
                     continue
+                print(f"Downloading {pdf_url}")
+                data = resp.content
                 (out / name).write_bytes(data)
                 existing.add(name)
 
