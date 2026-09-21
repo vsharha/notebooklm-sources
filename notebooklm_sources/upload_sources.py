@@ -1,6 +1,4 @@
 import time
-import tempfile
-from collections.abc import Callable
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -8,6 +6,7 @@ import httpx
 
 from notebooklm_tools.core.auth import get_auth_manager
 from notebooklm_tools.core.client import NotebookLMClient
+from notebooklm_tools.core.exceptions import SourceProcessingError
 
 
 def notebook_id_from_ref(notebook_ref: str) -> str:
@@ -65,7 +64,6 @@ def upload_sources(
     wait: bool = True,
     wait_timeout: float = 600.0,
     replace: bool = False,
-    converter: Callable[[Path], bytes] | None = None,
 ) -> None:
     if not files:
         return
@@ -88,16 +86,19 @@ def upload_sources(
         if skipped and not replace:
             print(f"Skipping {skipped} already uploaded file(s)")
 
+        failed = []
         for file in files_to_upload:
             print(f"Uploading {file.name}")
             old_source_ids = uploaded_source_ids_by_title.get(file.name, [])
-            if converter is not None:
-                with tempfile.TemporaryDirectory() as tmpdir:
-                    path = Path(tmpdir) / file.name
-                    path.write_bytes(converter(file))
-                    client.add_file(notebook_id, path, wait=wait or replace, wait_timeout=wait_timeout)
-            else:
+            try:
                 client.add_file(notebook_id, file, wait=wait or replace, wait_timeout=wait_timeout)
+            except SourceProcessingError as exc:
+                # NotebookLM keeps the failed entry, which would make later runs
+                # treat the file as already uploaded.
+                print(f"  NotebookLM failed to process {file.name}; removing the failed source")
+                client.delete_source(exc.source_id)
+                failed.append(file.name)
+                continue
             if replace and old_source_ids:
                 print(f"Deleting {len(old_source_ids)} replaced source(s) for {file.name}")
                 for attempt in range(1, 4):
@@ -110,5 +111,8 @@ def upload_sources(
                         print(f"Delete timed out, retrying ({attempt}/3)...")
                         time.sleep(2 ** attempt)
 
-    if files_to_upload:
-        print(f"Uploaded {len(files_to_upload)} file(s)")
+    uploaded = len(files_to_upload) - len(failed)
+    if uploaded:
+        print(f"Uploaded {uploaded} file(s)")
+    if failed:
+        print(f"Failed to upload {len(failed)} file(s): {', '.join(failed)}")

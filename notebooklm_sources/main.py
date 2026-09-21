@@ -3,7 +3,7 @@ from pathlib import Path
 
 from notebooklm_sources.mapping import CourseConfig, SourcesConfig, load_mapping
 from notebooklm_sources.pdf_page import collect_links, collect_indexed_pages
-from notebooklm_sources.pdf import download_pdfs_from_pages, convert_to_image_bytes
+from notebooklm_sources.download import download_files_from_pages
 from notebooklm_sources.upload_sources import upload_sources
 from notebooklm_sources.echo360 import download_transcripts
 
@@ -38,6 +38,12 @@ def resolve_pages(sources: SourcesConfig) -> set[str]:
     return pages
 
 
+def list_files(directory: Path) -> list[Path]:
+    if not directory.exists():
+        return []
+    return sorted(f for f in directory.iterdir() if f.is_file() and not f.name.startswith("."))
+
+
 def process_course(course_name: str, config: CourseConfig, *, no_upload: bool, dry_run: bool, replace: bool):
     print(f"\n{'=' * 40}")
     print(f"Processing: {course_name}")
@@ -51,7 +57,9 @@ def process_course(course_name: str, config: CourseConfig, *, no_upload: bool, d
             print(f"  {page}")
         return
 
-    download_pdfs_from_pages(pages, subdir=course_name, exclude_files=config.exclude_files)
+    download_files_from_pages(
+        pages, subdir=course_name, file_types=config.file_types, exclude_files=config.exclude_files
+    )
 
     if config.echo360:
         download_transcripts(config.echo360.section_id, course_name, Path("courses"))
@@ -68,29 +76,21 @@ def process_course(course_name: str, config: CourseConfig, *, no_upload: bool, d
     manual_dir = Path("courses") / course_name / "manual"
     transcript_dir = Path("courses") / course_name / "transcripts"
 
-    scraped_pdfs = sorted(scraped_dir.glob("*.pdf")) if scraped_dir.exists() else []
-    manual_files = sorted(manual_dir.iterdir()) if manual_dir.exists() else []
+    scraped_files = list_files(scraped_dir)
+    manual_files = list_files(manual_dir)
     transcripts = sorted(transcript_dir.glob("*.txt")) if transcript_dir.exists() else []
 
-    if not scraped_pdfs and not manual_files and not transcripts:
+    if not scraped_files and not manual_files and not transcripts:
         print("No files to upload.")
         return
 
-    converter = None if config.upload_original else lambda p: convert_to_image_bytes(p, config.pdf_quality)
-
-    if scraped_pdfs:
-        print(f"Found {len(scraped_pdfs)} scraped PDF(s) to upload")
-        upload_sources(notebook_id, scraped_pdfs, converter=converter, replace=replace)
+    if scraped_files:
+        print(f"Found {len(scraped_files)} scraped file(s) to upload")
+        upload_sources(notebook_id, scraped_files, replace=replace)
 
     if manual_files:
-        manual_pdfs = [f for f in manual_files if f.suffix.lower() == ".pdf"]
-        manual_others = [f for f in manual_files if f.suffix.lower() != ".pdf"]
-        if manual_pdfs:
-            print(f"Found {len(manual_pdfs)} manual PDF(s) to upload")
-            upload_sources(notebook_id, manual_pdfs, converter=converter, replace=replace)
-        if manual_others:
-            print(f"Found {len(manual_others)} manual file(s) to upload")
-            upload_sources(notebook_id, manual_others, replace=replace)
+        print(f"Found {len(manual_files)} manual file(s) to upload")
+        upload_sources(notebook_id, manual_files, replace=replace)
 
     if transcripts:
         print(f"Found {len(transcripts)} transcript(s) to upload")
