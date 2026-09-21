@@ -1,12 +1,41 @@
 courses:
-  inf2d:
-    notebook_id: "7733edc5-7ed2-4e59-b0be-a53dce198a26"
-    exclude_files: ["*[1][6-9][a-c].pdf"]
+  csec:
+    notebook_id: "4e0d3c6c-6822-4a81-866f-bac51925b557"
+
+  ilp:
+    notebook_id: "a98137b2-74db-4d46-8f1c-8c3a29ca2da2"
+    file_types: ["pdf", "pptx"]
     sources:
-      url: "https://opencourse.inf.ed.ac.uk/inf2d/course-materials"
-      traverse: ["week-*"]
-      collect: ["week-*/*"]
-      include_text: ["INF2D *", "INF2D: [0-9]*"]
+      pages:
+        - "https://opencourse.inf.ed.ac.uk/ilp"
+        - "https://opencourse.inf.ed.ac.uk/ilp/schedule-weekly"
+
+  pi:
+    notebook_id: "11c7ea1a-fabc-49d3-bab2-90e2bd71733d"
+    file_types: ["pptx", "docx"]
+    sources:
+      url: "https://opencourse.inf.ed.ac.uk/pi/course-materials"
+      collect: ["week-*"]
+      pages:
+        - "https://opencourse.inf.ed.ac.uk/node/1543"
+        - "https://opencourse.inf.ed.ac.uk/node/2506"
+        - "https://opencourse.inf.ed.ac.uk/node/2554"
+
+  st:
+    notebook_id: "bb71f68d-3d64-4866-a1f2-eeb958c076b7"
+    sources:
+      url: "https://opencourse.inf.ed.ac.uk/st/course-materials"
+      collect: ["week-*"]
+      pages: ["https://opencourse.inf.ed.ac.uk/st/assessment"]
+
+#  inf2d:
+#    notebook_id: "7733edc5-7ed2-4e59-b0be-a53dce198a26"
+#    exclude_files: ["*[1][6-9][a-c].pdf"]
+#    sources:
+#      url: "https://opencourse.inf.ed.ac.uk/inf2d/course-materials"
+#      traverse: ["week-*"]
+#      collect: ["week-*/*"]
+#      include_text: ["INF2D *", "INF2D: [0-9]*"]
 #    echo360:
 #      section_id: "89dac3da-c514-449d-8d3b-d01b878a8747"
 
